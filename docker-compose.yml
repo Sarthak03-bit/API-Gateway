@@ -1,0 +1,39 @@
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: uvicorn services.user_service.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  product-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: uvicorn services.product_service.main:app --host 0.0.0.0 --port 8002
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+    command: uvicorn services.order_service.main:app --host 0.0.0.0 --port 8003
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+  
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+    restart: unless-stopped
