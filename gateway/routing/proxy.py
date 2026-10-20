@@ -58,7 +58,15 @@ async def proxy_request(
         key: value
         for key, value in request.headers.items()
         if key.lower() not in HOP_BY_HOP_HEADERS
+        and key.lower() not in {
+            "x-api-key",
+            "x-client-id",
+            "x-request-id",
+        }
     }
+
+    headers["X-Client-ID"] = request.state.client_id
+    headers["X-Request-ID"] = request.state.request_id
 
     body = await request.body()
     client: httpx.AsyncClient = request.app.state.http_client

@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile.service
     command: uvicorn services.user_service.main:app --host 0.0.0.0 --port 8001
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     restart: unless-stopped
 
   product-service:
@@ -13,8 +13,8 @@ services:
       context: .
       dockerfile: Dockerfile.service
     command: uvicorn services.product_service.main:app --host 0.0.0.0 --port 8002
-    ports:
-      - "8002:8002"
+    expose:
+      - "8002"
     restart: unless-stopped
 
   order-service:
@@ -22,8 +22,8 @@ services:
       context: .
       dockerfile: Dockerfile.service
     command: uvicorn services.order_service.main:app --host 0.0.0.0 --port 8003
-    ports:
-      - "8003:8003"
+    expose:
+      - "8003"
     restart: unless-stopped
   
   gateway:
@@ -32,8 +32,31 @@ services:
       dockerfile: Dockerfile.gateway
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     depends_on:
       - user-service
       - product-service
       - order-service
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://gatekeeper:${POSTGRES_PASSWORD}@postgres:5432/gatekeeper"
     restart: unless-stopped
+    
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: gatekeeper
+      POSTGRES_USER: gatekeeper
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gatekeeper -d gatekeeper"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  postgres_data:
